@@ -132,16 +132,13 @@ class Inception3(nn.Module):
         x = self._transform_input(x)
         x, aux = self._forward(x)
         aux_defined = self.training and self.aux_logits
-        if aux_defined:
+        if torch.jit.is_scripting():
+            if not aux_defined:
+                warnings.warn("Scripted Inception3 always returns Inception3 Tuple")
             return InceptionOutputs(x, aux)
         else:
-            return x
-   
-class InceptionOutputs:
-    def __init__(self, logits, aux_logits=None):
-        self.logits = logits
-        self.aux_logits = aux_logits
-     
+            return self.eager_outputs(x, aux)
+        
 class InceptionA(nn.Module):
     
     def __init__(self, in_channels, pool_features, conv_block=None):
